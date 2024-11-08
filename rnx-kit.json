@@ -1,0 +1,20 @@
+{
+  "kitType": "app",
+  "alignDeps": {
+    "requirements": {
+      "development": ["react-native@0.73"],
+      "production": ["react-native@0.73"]
+    },
+    "capabilities": [
+      "core-android",
+      "core-ios",
+      "react",
+      "navigation/native",
+      "navigation/stack",
+      "async-storage",
+      "maps",
+      "location",
+      "notifications"
+    ]
+  }
+}

@@ -1,0 +1,8 @@
+project 'EAS.xcodeproj'
+
+target 'EAS' do
+  pod 'react-native-geolocation-service', :path => '../node_modules/react-native-geolocation-service'
+  # Add this line:
+  pod 'react-native-geolocation-service', :path => '../node_modules/react-native-geolocation-service'
+  # ... rest of your podfile
+end 

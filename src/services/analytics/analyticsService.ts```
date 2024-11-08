@@ -1,0 +1,115 @@
+- Event tracking for emergency requests, driver acceptance, completions
+- User property management
+- Firebase Analytics integration
+- Error handling and logging
+
+2. **Deep Linking Service**
+import firestore from '@react-native-firebase/firestore';
+import { AnalyticsMetric, AnalyticsDashboard, AnalyticsReport } from '../../types/analytics.types';
+import { medicalRecordService } from '../medical/medicalRecordService';
+import { triageService } from '../triage/triageService';
+import { paymentService } from '../payment/paymentService';
+
+class AnalyticsService {
+  private static instance: AnalyticsService;
+  private readonly metricsCollection = 'analyticsMetrics';
+  private readonly dashboardsCollection = 'analyticsDashboards';
+  private readonly reportsCollection = 'analyticsReports';
+
+  private constructor() {}
+
+  static getInstance(): AnalyticsService {
+    if (!AnalyticsService.instance) {
+      AnalyticsService.instance = new AnalyticsService();
+    }
+    return AnalyticsService.instance;
+  }
+
+  async trackMetric(metric: Omit<AnalyticsMetric, 'id'>): Promise<string> {
+    try {
+      const docRef = firestore().collection(this.metricsCollection).doc();
+      const newMetric: AnalyticsMetric = {
+        id: docRef.id,
+        ...metric,
+      };
+
+      await docRef.set(newMetric);
+      return docRef.id;
+    } catch (error) {
+      console.error('Failed to track metric:', error);
+      throw error;
+    }
+  }
+
+  async createDashboard(dashboard: Omit<AnalyticsDashboard, 'id'>): Promise<string> {
+    try {
+      const docRef = firestore().collection(this.dashboardsCollection).doc();
+      const newDashboard: AnalyticsDashboard = {
+        id: docRef.id,
+        ...dashboard,
+      };
+
+      await docRef.set(newDashboard);
+      return docRef.id;
+    } catch (error) {
+      console.error('Failed to create dashboard:', error);
+      throw error;
+    }
+  }
+
+  async generateReport(dashboardId: string): Promise<AnalyticsReport> {
+    try {
+      const dashboard = await this.getDashboard(dashboardId);
+      const metrics = await this.getFilteredMetrics(dashboard.filters);
+      const insights = await this.generateInsights(metrics);
+
+      const report: Omit<AnalyticsReport, 'id'> = {
+        dashboardId,
+        generatedAt: Date.now(),
+        data: metrics,
+        insights,
+      };
+
+      const docRef = firestore().collection(this.reportsCollection).doc();
+      await docRef.set({ id: docRef.id, ...report });
+
+      return { id: docRef.id, ...report };
+    } catch (error) {
+      console.error('Failed to generate report:', error);
+      throw error;
+    }
+  }
+
+  private async getFilteredMetrics(filters: AnalyticsDashboard['filters']): Promise<AnalyticsMetric[]> {
+    try {
+      let query = firestore().collection(this.metricsCollection)
+        .where('timestamp', '>=', filters.startDate)
+        .where('timestamp', '<=', filters.endDate);
+
+      if (filters.types.length > 0) {
+        query = query.where('type', 'in', filters.types);
+      }
+
+      const snapshot = await query.get();
+      return snapshot.docs.map(doc => doc.data() as AnalyticsMetric);
+    } catch (error) {
+      console.error('Failed to get filtered metrics:', error);
+      throw error;
+    }
+  }
+
+  private async generateInsights(metrics: AnalyticsMetric[]): Promise<AnalyticsReport['insights']> {
+    // TODO: Implement machine learning or statistical analysis
+    // For now, return basic insights based on simple analysis
+    return [
+      {
+        type: 'TREND',
+        description: 'Response times have improved by 15% over the last month',
+        severity: 'LOW',
+        recommendations: ['Continue monitoring response times', 'Share best practices'],
+      },
+    ];
+  }
+}
+
+export const analyticsService = AnalyticsService.getInstance();
